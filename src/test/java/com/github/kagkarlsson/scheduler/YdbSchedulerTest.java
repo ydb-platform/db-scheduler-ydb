@@ -7,6 +7,7 @@ import com.github.kagkarlsson.scheduler.task.ExecutionContext;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
+import com.github.kagkarlsson.scheduler.utils.YdbTaskEntityDao;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,26 +43,33 @@ public class YdbSchedulerTest {
                 .withAuthProvider(CloudAuthHelper.getAuthProviderFromEnviron())
                 .build()) {
             try (QueryClient qc = QueryClient.newClient(gt).build()) {
-                SchedulerBuilder builder = YdbScheduler.create(qc, YdbTaskRepository.DEFAULT_TABLE_NAME);
+                YdbTaskEntityDao ydbDao = new YdbTaskEntityDao(qc, YdbTaskRepository.DEFAULT_TABLE_NAME);
+                ydbDao.createTable();
 
-                AtomicInteger count = new AtomicInteger();
+                try {
+                    SchedulerBuilder builder = YdbScheduler.create(qc, YdbTaskRepository.DEFAULT_TABLE_NAME);
 
-                OneTimeTask<Object> task = Tasks
-                    .oneTime("task", Object.class).execute((TaskInstance<Object> inst,
-                        ExecutionContext ctx) -> {
-                        LOG.info("Execution");
-                        count.addAndGet(1);
-                    });
+                    AtomicInteger count = new AtomicInteger();
 
-                builder.knownTasks.add(task);
-                builder.executorService(MoreExecutors.newDirectExecutorService());
+                    OneTimeTask<Object> task = Tasks
+                        .oneTime("task", Object.class).execute((TaskInstance<Object> inst,
+                            ExecutionContext ctx) -> {
+                            LOG.info("Execution");
+                            count.addAndGet(1);
+                        });
 
-                Scheduler scheduler = builder.build();
-                scheduler.schedule(task.instance("instance-1"), Instant.now());
+                    builder.knownTasks.add(task);
+                    builder.executorService(MoreExecutors.newDirectExecutorService());
 
-                scheduler.executeDue();
+                    Scheduler scheduler = builder.build();
+                    scheduler.schedule(task.instance("instance-1"), Instant.now());
 
-                Assertions.assertThat(count).hasValue(1);
+                    scheduler.executeDue();
+
+                    Assertions.assertThat(count).hasValue(1);
+                } finally {
+                    ydbDao.dropTable();
+                }
             }
         }
     }

@@ -22,6 +22,7 @@ import tech.ydb.query.tools.SessionRetryContext;
 import tech.ydb.table.query.Params;
 import tech.ydb.table.values.OptionalType;
 import tech.ydb.table.result.ResultSetReader;
+import tech.ydb.table.values.OptionalValue;
 import tech.ydb.table.values.PrimitiveValue;
 import tech.ydb.table.values.PrimitiveType;
 import tech.ydb.table.values.StructValue;
@@ -40,6 +41,7 @@ public class YdbTaskRepository implements TaskRepository {
 
     private static final OptionalType TYPE_TEXT = PrimitiveType.Text.makeOptional();
     private static final OptionalType TYPE_TS = PrimitiveType.Timestamp.makeOptional();
+    private static final OptionalType TYPE_BYTES = PrimitiveType.Bytes.makeOptional();
 
     private final TaskResolver taskResolver;
     private final SchedulerName schedulerSchedulerName;
@@ -58,13 +60,27 @@ public class YdbTaskRepository implements TaskRepository {
         this.tableName = tableName;
     }
 
+    private static OptionalValue safeBytes(byte[] in) {
+        if (in==null) {
+            return TYPE_BYTES.emptyValue();
+        }
+        return PrimitiveValue.newBytes(in).makeOptional();
+    }
+
+    private static OptionalValue safeTimestamp(Instant in) {
+        if (in==null) {
+            return TYPE_TS.emptyValue();
+        }
+        return PrimitiveValue.newTimestamp(in).makeOptional();
+    }
+
     @Override
     public boolean createIfNotExists(Execution execution) {
         LOG.debug("Creation request for execution {}", execution);
 
         String queryText = "DECLARE $input AS Struct<task_name:Text,"
-                + "task_instance:Text, task_data:String,"
-                + "execution_time:Timestamp, picked:Bool,"
+                + "task_instance:Text, task_data:String?,"
+                + "execution_time:Timestamp?, picked:Bool,"
                 + "version:Int64>; "
                 + ""
                 + "SELECT 1 AS a FROM `" + tableName + "` "
@@ -80,8 +96,8 @@ public class YdbTaskRepository implements TaskRepository {
         HashMap<String, Value<?>> input = new HashMap<>();
         input.put("task_name", PrimitiveValue.newText(execution.taskInstance.getTaskName()));
         input.put("task_instance", PrimitiveValue.newText(execution.taskInstance.getId()));
-        input.put("task_data", PrimitiveValue.newBytes(taskData));
-        input.put("execution_time", PrimitiveValue.newTimestamp(execution.executionTime));
+        input.put("task_data", safeBytes(taskData));
+        input.put("execution_time", safeTimestamp(execution.executionTime));
         input.put("picked", PrimitiveValue.newBool(false));
         input.put("version", PrimitiveValue.newInt64(1L));
 
@@ -165,7 +181,6 @@ public class YdbTaskRepository implements TaskRepository {
         String sql = qb.getQuery();
         Params params = qb.getParams();
         LOG.debug("SQL query: {}", sql);
-        System.out.println("*** " + sql);
         ResultSetReader result = retryCtx.supplyResult(qs -> QueryReader.readFrom(
                 qs.createQuery(sql, TxMode.SNAPSHOT_RO, params)))
                 .join().getValue().getResultSet(0);
@@ -255,12 +270,6 @@ public class YdbTaskRepository implements TaskRepository {
                 new NewData(newData), lastSuccess, lastFailure, consecutiveFailures);
     }
 
-    private static Value<?> makeTimestamp(Instant instant) {
-        return instant==null ?
-                TYPE_TS.emptyValue() :
-                PrimitiveValue.newTimestamp(instant).makeOptional();
-    }
-
     private boolean rescheduleInternal(Execution execution, Instant nextExecutionTime,
             NewData newData, Instant lastSuccess, Instant lastFailure, int consecutiveFailures) {
         StringBuilder sb = new StringBuilder();
@@ -273,7 +282,7 @@ public class YdbTaskRepository implements TaskRepository {
                 .append("DECLARE $last_success AS Timestamp?; ")
                 .append("DECLARE $last_failure AS Timestamp?; ")
                 .append("DECLARE $consecutive_failures AS Int32; ")
-                .append("DECLARE $execution_time AS Timestamp; ");
+                .append("DECLARE $execution_time AS Timestamp?; ");
         if (newData != null) {
             sb.append("DECLARE $task_data AS String; ");
         }
@@ -306,10 +315,10 @@ public class YdbTaskRepository implements TaskRepository {
         params.put("$picked", PrimitiveValue.newBool(false));
         params.put("$picked_by", TYPE_TEXT.emptyValue());
         params.put("$last_heartbeat", TYPE_TS.emptyValue());
-        params.put("$last_success", makeTimestamp(lastSuccess));
-        params.put("$last_failure", makeTimestamp(lastFailure));
+        params.put("$last_success", safeTimestamp(lastSuccess));
+        params.put("$last_failure", safeTimestamp(lastFailure));
         params.put("$consecutive_failures", PrimitiveValue.newInt32(consecutiveFailures));
-        params.put("$execution_time", PrimitiveValue.newTimestamp(nextExecutionTime));
+        params.put("$execution_time", safeTimestamp(nextExecutionTime));
         if (newData != null) {
             params.put("$task_data", PrimitiveValue.newBytes(serializer.serialize(newData.data)));
         }
@@ -464,10 +473,10 @@ public class YdbTaskRepository implements TaskRepository {
     public int removeExecutions(String taskName) {
         StringBuilder sb = new StringBuilder();
         sb.append("DECLARE $task_name AS Text; ");
-        sb.append("SELECT COUNT(*) AS cnt FROM `").append(tableName)
+        sb.append("SELECT CAST(COUNT(*) AS Int32) AS cnt FROM `").append(tableName)
                 .append("` WHERE task_name=$task_name; ");
         sb.append("DELETE FROM `").append(tableName)
-                .append(" WHERE task_name=$task_name;");
+                .append("` WHERE task_name=$task_name;");
         String sql = sb.toString();
         Params params = Params.of(
                 "$task_name", PrimitiveValue.newText(taskName)

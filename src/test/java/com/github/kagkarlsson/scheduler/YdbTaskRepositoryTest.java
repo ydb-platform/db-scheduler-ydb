@@ -25,11 +25,14 @@ import com.github.kagkarlsson.scheduler.utils.TestUtils;
 import com.github.kagkarlsson.scheduler.utils.YdbTaskEntityDao;
 import java.util.Collection;
 
+import tech.ydb.auth.iam.CloudAuthHelper;
+import tech.ydb.core.grpc.GrpcTransport;
+import tech.ydb.query.QueryClient;
+
 import tech.ydb.test.junit5.YdbHelperExtension;
 
-import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -39,10 +42,6 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import org.junit.jupiter.api.AfterEach;
-import tech.ydb.auth.iam.CloudAuthHelper;
-import tech.ydb.core.grpc.GrpcTransport;
-import tech.ydb.query.QueryClient;
 
 @ExtendWith(MockitoExtension.class)
 public class YdbTaskRepositoryTest {
