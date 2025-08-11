@@ -3,7 +3,7 @@ CREATE TABLE scheduled_tasks (
     task_instance Text NOT NULL,
     task_data String,
     execution_time Timestamp,
-    picked Boolean,
+    picked Bool,
     picked_by Text,
     last_success Timestamp,
     last_failure Timestamp,

@@ -64,7 +64,7 @@ public class YdbTaskRepository implements TaskRepository {
 
         String queryText = "DECLARE $input AS Struct<task_name:Text,"
                 + "task_instance:Text, task_data:String,"
-                + "execution_time:Timestamp, picked:Boolean,"
+                + "execution_time:Timestamp, picked:Bool,"
                 + "version:Int64>; "
                 + ""
                 + "SELECT 1 AS a FROM `" + tableName + "` "
@@ -269,7 +269,7 @@ public class YdbTaskRepository implements TaskRepository {
         sb.append("DECLARE $task_name AS Text; ")
                 .append("DECLARE $task_instance AS Text; ")
                 .append("DECLARE $version AS Int64; ");
-        sb.append("DECLARE $picked AS Boolean; ")
+        sb.append("DECLARE $picked AS Bool; ")
                 .append("DECLARE $picked_by AS Text?; ")
                 .append("DECLARE $last_heartbeat AS Timestamp?; ")
                 .append("DECLARE $last_success AS Timestamp?; ")
@@ -328,8 +328,8 @@ public class YdbTaskRepository implements TaskRepository {
         sb.append("DECLARE $task_name AS Text; ")
                 .append("DECLARE $task_instance AS Text; ")
                 .append("DECLARE $version AS Int64; ");
-        sb.append("DECLARE $picked AS Boolean; ")
-                .append("DECLARE $picked_before AS Boolean; ")
+        sb.append("DECLARE $picked AS Bool; ")
+                .append("DECLARE $picked_before AS Bool; ")
                 .append("DECLARE $picked_by AS Text?; ")
                 .append("DECLARE $last_heartbeat AS Timestamp?; ")
                 .append("DECLARE $execution_time AS Timestamp; ");

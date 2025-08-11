@@ -10,7 +10,6 @@ import tech.ydb.common.transaction.TxMode;
 import tech.ydb.query.QueryClient;
 import tech.ydb.query.tools.QueryReader;
 import tech.ydb.query.tools.SessionRetryContext;
-import tech.ydb.table.query.Params;
 import tech.ydb.table.result.ResultSetReader;
 import tech.ydb.table.result.ValueReader;
 import tech.ydb.table.values.OptionalValue;
@@ -40,7 +39,7 @@ public class YdbTaskEntityDao {
                 + "    task_instance Text NOT NULL,\n"
                 + "    task_data String,\n"
                 + "    execution_time Timestamp,\n"
-                + "    picked Boolean,\n"
+                + "    picked Bool,\n"
                 + "    picked_by Text,\n"
                 + "    last_success Timestamp,\n"
                 + "    last_failure Timestamp,\n"
@@ -57,7 +56,7 @@ public class YdbTaskEntityDao {
     public void dropTable() {
         String sql = "DROP TABLE `" + tableName + "`;";
         retryCtx.supplyResult(qs -> qs.createQuery(sql, TxMode.NONE).execute())
-                .join().getStatus().expectSuccess();
+                .join();
     }
 
     public List<YdbTaskEntity> readAll() {
