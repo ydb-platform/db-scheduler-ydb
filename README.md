@@ -19,11 +19,11 @@ This module aims to be as non-intrusive as possible regarding the main project m
 <dependency>
     <groupId>tech.ydb</groupId>
     <artifactId>db-scheduler-ydb</artifactId>
-    <version>9.4</version>
+    <version>9.4.1</version>
 </dependency>
 ```
 
-Dependency versions are aligned with the main project's version numbers.
+Artifact version numbers are aligned with the main project's version numbers, with the extra patch number appended.
 
 2. Instantiate and start the scheduler
 
