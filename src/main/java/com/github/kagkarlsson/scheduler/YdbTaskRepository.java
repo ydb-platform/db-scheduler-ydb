@@ -338,8 +338,7 @@ public class YdbTaskRepository implements TaskRepository {
         sb.append("DECLARE $picked AS Bool; ")
                 .append("DECLARE $picked_before AS Bool; ")
                 .append("DECLARE $picked_by AS Text?; ")
-                .append("DECLARE $last_heartbeat AS Timestamp?; ")
-                .append("DECLARE $execution_time AS Timestamp; ");
+                .append("DECLARE $last_heartbeat AS Timestamp?; ");
         sb.append("SELECT 1 AS a FROM `").append(tableName)
                 .append("` WHERE task_name=$task_name")
                 .append(" AND task_instance=$task_instance")
@@ -363,7 +362,7 @@ public class YdbTaskRepository implements TaskRepository {
                 "$picked", PrimitiveValue.newBool(true),
                 "$picked_before", PrimitiveValue.newBool(false),
                 "$picked_by", PrimitiveValue.newText(schedulerSchedulerName.getName()).makeOptional(),
-                "$last_heartbeat", TYPE_TS.emptyValue()
+                "$last_heartbeat", safeTimestamp(timePicked)
         );
         ResultSetReader result = retryCtx.supplyResult(qs -> QueryReader.readFrom(
                 qs.createQuery(sql, TxMode.SERIALIZABLE_RW, params)))

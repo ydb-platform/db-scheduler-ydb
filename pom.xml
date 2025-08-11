@@ -7,7 +7,7 @@
 
     <artifactId>db-scheduler-ydb</artifactId>
     <groupId>tech.ydb</groupId>
-    <version>1.0-SNAPSHOT</version>
+    <version>9.4</version>
     <name>db-scheduler: YDB support</name>
     <description>Module providing YDB support for db-scheduler</description>
     <url>https://github.com/ydb-platform/db-scheduler-ydb</url>
@@ -162,34 +162,11 @@
                         <TESTCONTAINERS_REUSE_ENABLE>true</TESTCONTAINERS_REUSE_ENABLE>
                         <YDB_ANONYMOUS_CREDENTIALS>1</YDB_ANONYMOUS_CREDENTIALS>
                         <TESTCONTAINERS_RYUK_DISABLED>true</TESTCONTAINERS_RYUK_DISABLED>
-                        <YDB_DOCKER_IMAGE>ydbplatform/local-ydb:25.1.3</YDB_DOCKER_IMAGE>
+                        <YDB_DOCKER_IMAGE>ydbplatform/local-ydb:latest</YDB_DOCKER_IMAGE>
                     </environmentVariables>
                 </configuration>
             </plugin>
         </plugins>
     </build>
-
-    <distributionManagement>
-        <!-- Publish versioned releases here -->
-        <repository>
-            <id>${nexus.server.projet.id}</id>
-            <name>Releases of ${project.artifactId}</name>
-            <url>${nexus.releases.repository}/</url>
-        </repository>
-
-        <!-- Publish snapshots here -->
-        <snapshotRepository>
-            <uniqueVersion>true</uniqueVersion>
-            <id>${nexus.server.projet.id}</id>
-            <name>Snapshots of ${project.artifactId}</name>
-            <url>${nexus.snapshots.repository}/</url>
-        </snapshotRepository>
-
-        <!-- Maven site:stage and site:deploy -->
-        <site>
-            <id>${nexus.server.projet.id}</id>
-            <url>${project.url}</url>
-        </site>
-    </distributionManagement>
 
 </project>

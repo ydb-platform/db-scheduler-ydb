@@ -1,7 +1,5 @@
 package com.github.kagkarlsson.scheduler;
 
-import com.github.kagkarlsson.scheduler.utils.YdbTaskEntityBuilder;
-import com.github.kagkarlsson.scheduler.utils.YdbTaskEntity;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -9,6 +7,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Spliterator;
@@ -23,7 +22,8 @@ import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import com.github.kagkarlsson.scheduler.utils.ExecutionBuilder;
 import com.github.kagkarlsson.scheduler.utils.TestUtils;
 import com.github.kagkarlsson.scheduler.utils.YdbTaskEntityDao;
-import java.util.Collection;
+import com.github.kagkarlsson.scheduler.utils.YdbTaskEntityBuilder;
+import com.github.kagkarlsson.scheduler.utils.YdbTaskEntity;
 
 import tech.ydb.auth.iam.CloudAuthHelper;
 import tech.ydb.core.grpc.GrpcTransport;
@@ -145,7 +145,7 @@ public class YdbTaskRepositoryTest {
 
         Mockito.when(taskResolver.getUnresolved()).thenReturn(Arrays.asList(unresolvedTask));
 
-        // Insert test data in mongo
+        // Insert test data in YDB
         // | Task name  | Task instance | picked | execution time | Should be selected |
         // |------------|---------------|--------|----------------|--------------------|
         // | name-1     | taskInstance  | false  | now - 1m       | true               |
@@ -186,7 +186,7 @@ public class YdbTaskRepositoryTest {
 
     @Test
     void testScheduledExecutions() {
-        // Insert test data in mongo
+        // Insert test data in YDB
         // | Task name | Task instance | picked | execution time | Should be selected |
         // |-----------|---------------|--------|----------------|--------------------|
         // | task-1    | instance-1    | false  | now + 1m       | yes (order 2)      |
@@ -229,7 +229,7 @@ public class YdbTaskRepositoryTest {
 
     @Test
     void testScheduledExecutionsWithPicekd() {
-        // Insert test data in mongo
+        // Insert test data in YDB
         // | Task name | Task instance | picked | execution time | Should be selected |
         // |-----------|---------------|--------|----------------|--------------------|
         // | task-1    | instance-1    | false  | now + 1m       | no                 |
@@ -269,7 +269,7 @@ public class YdbTaskRepositoryTest {
 
     @Test
     void testScheduledExecutionsWithTaskName() {
-        // Insert test data in mongo
+        // Insert test data in YDB
         // | Task name | Task instance | picked | execution time | Should be selected |
         // |-----------|---------------|--------|----------------|--------------------|
         // | task-1    | instance-1    | false  | now + 1m       | yes (order 2)      |
@@ -312,7 +312,7 @@ public class YdbTaskRepositoryTest {
 
     @Test
     void testScheduledExecutionsWithTaskNameAndPicked() {
-        // Insert test data in mongo
+        // Insert test data in YDB
         // | Task name | Task instance | picked | execution time | Should be selected |
         // |-----------|---------------|--------|----------------|--------------------|
         // | task-1    | instance-1    | false  | now + 1m       | no                 |
@@ -351,7 +351,7 @@ public class YdbTaskRepositoryTest {
 
     @Test
     void testRemove() {
-        // Insert test data in mongo
+        // Insert test data in YDB
         // | Task name | Task instance | version | picked | Should be deleted |
         // |-----------|---------------|---------|--------|-------------------|
         // | task-1    | instance-1    | 0       | false  | no                |
@@ -381,7 +381,7 @@ public class YdbTaskRepositoryTest {
 
     @Test
     void testRescheduleWithDataOk() {
-        // Insert test data in mongo
+        // Insert test data in YDB
         YdbTaskEntity task = YdbTaskEntityBuilder.aTaskEntity().taskName("name-1")
             .taskInstance("taskInstance")
             .executionTime(Instant.now()).consecutiveFailures(3).version(12)
@@ -423,7 +423,7 @@ public class YdbTaskRepositoryTest {
 
     @Test
     void testRescheduledWithoutData() {
-        // Insert test data in mongo
+        // Insert test data in YDB
         YdbTaskEntity task = YdbTaskEntityBuilder.aTaskEntity().taskName("name-1")
             .taskInstance("taskInstance")
             .executionTime(Instant.now()).consecutiveFailures(3).version(12)
@@ -464,7 +464,7 @@ public class YdbTaskRepositoryTest {
 
     @Test
     void testPickedFound() {
-        // Insert test data in mongo
+        // Insert test data in YDB
         int version = 0;
         YdbTaskEntity task = YdbTaskEntityBuilder.aTaskEntity().taskName("name-1")
             .taskInstance("taskInstance").executionTime(Instant.now())
@@ -518,7 +518,7 @@ public class YdbTaskRepositoryTest {
             .taskName("task-1")
             .lastHeartbeat(Instant.now().minus(10, ChronoUnit.MINUTES));
 
-        // Insert test data in mongo
+        // Insert test data in YDB
         // | Task name | Task instance | picked | execution time | Should be selected | Order |
         // |-----------|---------------|--------|----------------|--------------------|-------|
         // | task-1    | instance-1    | true   | now - 1h       | yes                | 2     |
@@ -574,7 +574,7 @@ public class YdbTaskRepositoryTest {
         YdbTaskEntityBuilder taskBuilder = YdbTaskEntityBuilder.aTaskEntity().taskName("task-1")
             .lastFailure(Instant.now());
 
-        // Insert test data in mongo
+        // Insert test data in YDB
         // | Task name | Task instance | last hearbeat | last failure | Should be selected |
         // |-----------|---------------|---------------|--------------|--------------------|
         // | task-1    | instance-1    | null          | now          | yes                |
