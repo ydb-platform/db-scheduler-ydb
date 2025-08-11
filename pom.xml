@@ -7,7 +7,7 @@
 
     <artifactId>db-scheduler-ydb</artifactId>
     <groupId>tech.ydb</groupId>
-    <version>9.4</version>
+    <version>9.4.1</version>
     <name>db-scheduler: YDB support</name>
     <description>Module providing YDB support for db-scheduler</description>
     <url>https://github.com/ydb-platform/db-scheduler-ydb</url>
