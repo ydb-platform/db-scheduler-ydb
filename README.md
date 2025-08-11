@@ -25,7 +25,27 @@ This module aims to be as non-intrusive as possible regarding the main project m
 
 Artifact version numbers are aligned with the main project's version numbers, with the extra patch number appended.
 
-2. Instantiate and start the scheduler
+2. Add the tasks table to your YDB database:
+
+```sql
+CREATE TABLE scheduled_tasks (
+    task_name Text NOT NULL,
+    task_instance Text NOT NULL,
+    task_data String,
+    execution_time Timestamp,
+    picked Bool,
+    picked_by Text,
+    last_success Timestamp,
+    last_failure Timestamp,
+    consecutive_failures Int32,
+    last_heartbeat Timestamp,
+    version Int64,
+    priority Int32,
+    PRIMARY KEY (task_name, task_instance)
+);
+```
+
+3. Instantiate and start the scheduler
 
 ```java
 GrpcTransport gt = GrpcTransport.forConnectionString(connectionString()).build();
@@ -34,4 +54,4 @@ Scheduler scheduler = YdbScheduler.create(qc, "db_scheduler_tasks", knownTasks).
 scheduler.start();
 ```
 
-3. Use the scheduler as detailed in the [db-scheduler documentation](https://github.com/kagkarlsson/db-scheduler/blob/master/README.md).
+4. Use the scheduler as detailed in the [db-scheduler documentation](https://github.com/kagkarlsson/db-scheduler/blob/master/README.md).
