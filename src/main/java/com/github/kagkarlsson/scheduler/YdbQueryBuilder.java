@@ -118,7 +118,70 @@ public class YdbQueryBuilder {
 
     }
 
-    public static class UnresolvedFilter implements Condition {
+    public static abstract class SingleParamCondition implements Condition {
+        protected abstract String getParamType();
+
+        @Override
+        public String getParametersPart(int index) {
+            return "DECLARE $p" + String.valueOf(index) + " AS " + getParamType();
+        }
+    }
+
+    public static abstract class TextCondition extends SingleParamCondition {
+        private final String value;
+
+        public TextCondition(String value) {
+            this.value = value;
+        }
+
+        @Override
+        public String getParamType() {
+            return "Text";
+        }
+
+        @Override
+        public void setParameters(int index, Params params) {
+            params.put("$p" + String.valueOf(index), PrimitiveValue.newText(value));
+        }
+    }
+
+    public static abstract class BoolCondition extends SingleParamCondition {
+        private final boolean value;
+
+        public BoolCondition(boolean value) {
+            this.value = value;
+        }
+
+        @Override
+        public String getParamType() {
+            return "Bool";
+        }
+
+        @Override
+        public void setParameters(int index, Params params) {
+            params.put("$p" + String.valueOf(index), PrimitiveValue.newBool(value));
+        }
+    }
+
+    public static abstract class TimestampCondition extends SingleParamCondition {
+        private final Instant value;
+
+        public TimestampCondition(Instant value) {
+            this.value = value;
+        }
+
+        @Override
+        public String getParamType() {
+            return "Timestamp";
+        }
+
+        @Override
+        public void setParameters(int index, Params params) {
+            params.put("$p" + String.valueOf(index), PrimitiveValue.newTimestamp(value));
+        }
+    }
+
+    public static class UnresolvedFilter extends SingleParamCondition {
         private final ArrayList<TaskResolver.UnresolvedTask> unresolved;
 
         public UnresolvedFilter(Collection<TaskResolver.UnresolvedTask> unresolved) {
@@ -135,8 +198,8 @@ public class YdbQueryBuilder {
         }
 
         @Override
-        public String getParametersPart(int index) {
-            return "DECLARE $p" + String.valueOf(index) + " AS List<Text>";
+        public String getParamType() {
+            return "List<Text>";
         }
 
         @Override
@@ -154,126 +217,64 @@ public class YdbQueryBuilder {
         }
     }
 
-    public static class PickedCondition implements Condition {
-        private final boolean value;
-
+    public static class PickedCondition extends BoolCondition {
         public PickedCondition(boolean value) {
-            this.value = value;
+            super(value);
         }
 
         @Override
         public String getQueryPart(int index) {
             return "picked=$p" + String.valueOf(index);
         }
-
-        @Override
-        public String getParametersPart(int index) {
-            return "DECLARE $p" + String.valueOf(index) + " AS Bool";
-        }
-
-        @Override
-        public void setParameters(int index, Params params) {
-            params.put("$p" + String.valueOf(index), PrimitiveValue.newBool(value));
-        }
     }
 
-    public static class TaskCondition implements Condition {
-        private final String value;
-
+    public static class TaskCondition extends TextCondition {
         public TaskCondition(String value) {
-            this.value = value;
+            super(value);
         }
 
         @Override
         public String getQueryPart(int index) {
             return "task_name=$p" + String.valueOf(index);
         }
-
-        @Override
-        public String getParametersPart(int index) {
-            return "DECLARE $p" + String.valueOf(index) + " AS Text";
-        }
-
-        @Override
-        public void setParameters(int index, Params params) {
-            params.put("$p" + String.valueOf(index), PrimitiveValue.newText(value));
-        }
     }
 
-    public static class InstanceCondition implements Condition {
-        private final String value;
-
+    public static class InstanceCondition extends TextCondition {
         public InstanceCondition(String value) {
-            this.value = value;
+            super(value);
         }
 
         @Override
         public String getQueryPart(int index) {
             return "task_instance=$p" + String.valueOf(index);
         }
-
-        @Override
-        public String getParametersPart(int index) {
-            return "DECLARE $p" + String.valueOf(index) + " AS Text";
-        }
-
-        @Override
-        public void setParameters(int index, Params params) {
-            params.put("$p" + String.valueOf(index), PrimitiveValue.newText(value));
-        }
     }
 
-    public static class ExecTimeCondition implements Condition {
-        private final Instant value;
-
+    public static class ExecTimeCondition extends TimestampCondition {
         public ExecTimeCondition(Instant value) {
-            this.value = value;
+            super(value);
         }
 
         @Override
         public String getQueryPart(int index) {
             return "execution_time<=$p" + String.valueOf(index);
         }
-
-        @Override
-        public String getParametersPart(int index) {
-            return "DECLARE $p" + String.valueOf(index) + " AS Timestamp";
-        }
-
-        @Override
-        public void setParameters(int index, Params params) {
-            params.put("$p" + String.valueOf(index), PrimitiveValue.newTimestamp(value));
-        }
     }
 
-    public static class LastHeartbeatCondition implements Condition {
-        private final Instant value;
-
+    public static class LastHeartbeatCondition extends TimestampCondition {
         public LastHeartbeatCondition(Instant value) {
-            this.value = value;
+            super(value);
         }
 
         @Override
         public String getQueryPart(int index) {
             return "last_heartbeat<=$p" + String.valueOf(index);
         }
-
-        @Override
-        public String getParametersPart(int index) {
-            return "DECLARE $p" + String.valueOf(index) + " AS Timestamp";
-        }
-
-        @Override
-        public void setParameters(int index, Params params) {
-            params.put("$p" + String.valueOf(index), PrimitiveValue.newTimestamp(value));
-        }
     }
 
-    public static class LongFailingCondition implements Condition {
-        private final Instant value;
-
+    public static class LongFailingCondition extends TimestampCondition {
         public LongFailingCondition(Instant value) {
-            this.value = value;
+            super(value);
         }
 
         @Override
@@ -281,16 +282,6 @@ public class YdbQueryBuilder {
             return "((last_success is null and last_failure is not null)"
                     + "or (last_failure is not null and last_success < "
                     + "$p" + String.valueOf(index) + "))";
-        }
-
-        @Override
-        public String getParametersPart(int index) {
-            return "DECLARE $p" + String.valueOf(index) + " AS Timestamp";
-        }
-
-        @Override
-        public void setParameters(int index, Params params) {
-            params.put("$p" + String.valueOf(index), PrimitiveValue.newTimestamp(value));
         }
     }
 }
