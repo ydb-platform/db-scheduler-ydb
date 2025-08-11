@@ -1,16 +1,17 @@
 package com.github.kagkarlsson.scheduler;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Map;
 import java.util.Optional;
 
+import tech.ydb.table.query.Params;
 import tech.ydb.table.values.ListValue;
 import tech.ydb.table.values.PrimitiveType;
 import tech.ydb.table.values.PrimitiveValue;
-import tech.ydb.table.values.Value;
 
 /**
+ * Custom SQL query builder for YDB.
  *
  * @author mzinal
  */
@@ -25,6 +26,7 @@ public class YdbQueryBuilder {
     private final ArrayList<Condition> conditions = new ArrayList<>();
     private Optional<String> orderBy = Optional.empty();
     private Optional<String> fields = Optional.empty();
+    private Optional<Integer> limit = Optional.empty();
 
     public YdbQueryBuilder(String tableName) {
         this.tableName = tableName;
@@ -46,6 +48,11 @@ public class YdbQueryBuilder {
 
     public YdbQueryBuilder fields(String fields) {
         this.fields = Optional.of(fields);
+        return this;
+    }
+
+    public YdbQueryBuilder limit(int limit) {
+        this.limit = Optional.of(limit);
         return this;
     }
 
@@ -87,8 +94,18 @@ public class YdbQueryBuilder {
         }
 
         orderBy.ifPresent(o -> sb.append(" ORDER BY ").append(o));
+        limit.ifPresent(o -> sb.append(" LIMIT ").append(limit));
         sb.append(";");
         return sb.toString();
+    }
+
+    public Params getParams() {
+        Params p = Params.create(conditions.size());
+        int index = 0;
+        for (Condition cond : conditions) {
+            cond.setParameters(++index, p);
+        }
+        return p;
     }
 
     public static interface Condition {
@@ -97,7 +114,7 @@ public class YdbQueryBuilder {
 
         String getParametersPart(int index);
 
-        void setParameters(int index, Map<String, Value<?>> params);
+        void setParameters(int index, Params params);
 
     }
 
@@ -123,7 +140,7 @@ public class YdbQueryBuilder {
         }
 
         @Override
-        public void setParameters(int index, Map<String, Value<?>> params) {
+        public void setParameters(int index, Params params) {
             String pname = "$p" + String.valueOf(index);
             if (unresolved.isEmpty()) {
                 params.put(pname, ListValue.empty(PrimitiveType.Text));
@@ -155,7 +172,7 @@ public class YdbQueryBuilder {
         }
 
         @Override
-        public void setParameters(int index, Map<String, Value<?>> params) {
+        public void setParameters(int index, Params params) {
             params.put("$p" + String.valueOf(index), PrimitiveValue.newBool(value));
         }
     }
@@ -178,8 +195,102 @@ public class YdbQueryBuilder {
         }
 
         @Override
-        public void setParameters(int index, Map<String, Value<?>> params) {
+        public void setParameters(int index, Params params) {
             params.put("$p" + String.valueOf(index), PrimitiveValue.newText(value));
+        }
+    }
+
+    public static class InstanceCondition implements Condition {
+        private final String value;
+
+        public InstanceCondition(String value) {
+            this.value = value;
+        }
+
+        @Override
+        public String getQueryPart(int index) {
+            return "task_instance=$p" + String.valueOf(index);
+        }
+
+        @Override
+        public String getParametersPart(int index) {
+            return "DECLARE $p" + String.valueOf(index) + "AS Text";
+        }
+
+        @Override
+        public void setParameters(int index, Params params) {
+            params.put("$p" + String.valueOf(index), PrimitiveValue.newText(value));
+        }
+    }
+
+    public static class ExecTimeCondition implements Condition {
+        private final Instant value;
+
+        public ExecTimeCondition(Instant value) {
+            this.value = value;
+        }
+
+        @Override
+        public String getQueryPart(int index) {
+            return "execution_time<=$p" + String.valueOf(index);
+        }
+
+        @Override
+        public String getParametersPart(int index) {
+            return "DECLARE $p" + String.valueOf(index) + "AS Timestamp";
+        }
+
+        @Override
+        public void setParameters(int index, Params params) {
+            params.put("$p" + String.valueOf(index), PrimitiveValue.newTimestamp(value));
+        }
+    }
+
+    public static class LastHeartbeatCondition implements Condition {
+        private final Instant value;
+
+        public LastHeartbeatCondition(Instant value) {
+            this.value = value;
+        }
+
+        @Override
+        public String getQueryPart(int index) {
+            return "last_heartbeat<=$p" + String.valueOf(index);
+        }
+
+        @Override
+        public String getParametersPart(int index) {
+            return "DECLARE $p" + String.valueOf(index) + "AS Timestamp";
+        }
+
+        @Override
+        public void setParameters(int index, Params params) {
+            params.put("$p" + String.valueOf(index), PrimitiveValue.newTimestamp(value));
+        }
+    }
+
+    public static class LongFailingCondition implements Condition {
+        private final Instant value;
+
+        public LongFailingCondition(Instant value) {
+            this.value = value;
+        }
+
+        @Override
+        public String getQueryPart(int index) {
+            return "((last_success is null and last_failure is not null)"
+                    + "or (last_failure is not null and last_success < "
+                    + "$p" + String.valueOf(index) + "))";
+        }
+
+        @Override
+        public String getParametersPart(int index) {
+            return "DECLARE $p" + String.valueOf(index) + "AS Timestamp";
+        }
+
+        @Override
+        public void setParameters(int index, Params params) {
+            params.put("$p" + String.valueOf(index), PrimitiveValue.newTimestamp(value));
         }
     }
 }
