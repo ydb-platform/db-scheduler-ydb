@@ -35,6 +35,9 @@ import tech.ydb.table.values.Value;
  */
 public class YdbTaskRepository implements TaskRepository {
     private static final Logger LOG = LoggerFactory.getLogger(YdbTaskRepository.class);
+
+    public static final String DEFAULT_TABLE_NAME = "scheduled_tasks";
+
     private static final OptionalType TYPE_TEXT = PrimitiveType.Text.makeOptional();
     private static final OptionalType TYPE_TS = PrimitiveType.Timestamp.makeOptional();
 

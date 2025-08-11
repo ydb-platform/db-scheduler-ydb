@@ -1,4 +1,4 @@
-create table scheduled_tasks (
+CREATE TABLE scheduled_tasks (
     task_name Text NOT NULL,
     task_instance Text NOT NULL,
     task_data String,
