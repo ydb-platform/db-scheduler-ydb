@@ -25,7 +25,7 @@ public class YdbQueryBuilder {
     private final String tableName;
     private final ArrayList<Condition> conditions = new ArrayList<>();
     private Optional<String> orderBy = Optional.empty();
-    private Optional<String> fields = Optional.empty();
+    private Optional<String> fields = Optional.of(DEFAULT_FIELDS);
     private Optional<Integer> limit = Optional.empty();
 
     public YdbQueryBuilder(String tableName) {
@@ -47,7 +47,11 @@ public class YdbQueryBuilder {
     }
 
     public YdbQueryBuilder fields(String fields) {
-        this.fields = Optional.of(fields);
+        if (fields==null || fields.trim().length()==0) {
+            this.fields = Optional.empty();
+        } else {
+            this.fields = Optional.of(fields);
+        }
         return this;
     }
 

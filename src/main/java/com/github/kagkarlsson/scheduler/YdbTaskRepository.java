@@ -99,12 +99,9 @@ public class YdbTaskRepository implements TaskRepository {
 
     private YdbQueryBuilder queryForFilter(ScheduledExecutionsFilter filter) {
         final YdbQueryBuilder qb = YdbQueryBuilder.selectFromTable(tableName);
-        qb.fields(YdbQueryBuilder.DEFAULT_FIELDS);
-
         filter.getPickedValue().ifPresent(value -> {
             qb.andCondition(new YdbQueryBuilder.PickedCondition(value));
         });
-
         qb.orderBy("execution_time asc");
         return qb;
     }
@@ -199,8 +196,7 @@ public class YdbTaskRepository implements TaskRepository {
 
     @Override
     public List<Execution> getDue(Instant now, int limit) {
-        YdbQueryBuilder qb = YdbQueryBuilder.selectFromTable(tableName);
-        qb.fields(YdbQueryBuilder.DEFAULT_FIELDS)
+        YdbQueryBuilder qb = YdbQueryBuilder.selectFromTable(tableName)
                 .andCondition(new YdbQueryBuilder.PickedCondition(false))
                 .andCondition(new YdbQueryBuilder.ExecTimeCondition(now))
                 .orderBy("execution_time asc");
