@@ -10,8 +10,10 @@ import tech.ydb.common.transaction.TxMode;
 import tech.ydb.query.QueryClient;
 import tech.ydb.query.tools.QueryReader;
 import tech.ydb.query.tools.SessionRetryContext;
+import tech.ydb.table.query.Params;
 import tech.ydb.table.result.ResultSetReader;
 import tech.ydb.table.result.ValueReader;
+import tech.ydb.table.values.ListValue;
 import tech.ydb.table.values.OptionalValue;
 import tech.ydb.table.values.PrimitiveType;
 import tech.ydb.table.values.PrimitiveValue;
@@ -110,7 +112,25 @@ public class YdbTaskEntityDao {
     }
 
     public void save(Collection<YdbTaskEntity> tes) {
-        tes.stream().map(te -> mapEntity(te));
+        String sql = "DECLARE $input AS List<Struct<"
+                + "    task_name:Text,"
+                + "    task_instance:Text,"
+                + "    task_data:String?,"
+                + "    execution_time:Timestamp?,"
+                + "    picked:Bool,"
+                + "    picked_by:Text?,"
+                + "    last_success:Timestamp?,"
+                + "    last_failure:Timestamp?,"
+                + "    consecutive_failures:Int32?,"
+                + "    last_heartbeat:Timestamp?,"
+                + "    version:Int64,"
+                + "    priority:Int32"
+                + ">>; "
+                + "UPSERT INTO `" + tableName + "` SELECT * FROM AS_TABLE($input);";
+        ListValue input = ListValue.of(
+                tes.stream().map(te -> mapEntity(te)).toArray(StructValue[]::new));
+        retryCtx.supplyResult(qs -> qs.createQuery(sql, TxMode.SERIALIZABLE_RW, Params.of("$input", input)).execute())
+                .join().getStatus().expectSuccess();
     }
 
     private StructValue mapEntity(YdbTaskEntity te) {
