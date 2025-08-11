@@ -168,7 +168,7 @@ public class YdbQueryBuilder {
 
         @Override
         public String getParametersPart(int index) {
-            return "DECLARE $p" + String.valueOf(index) + "AS Boolean";
+            return "DECLARE $p" + String.valueOf(index) + " AS Bool";
         }
 
         @Override
@@ -191,7 +191,7 @@ public class YdbQueryBuilder {
 
         @Override
         public String getParametersPart(int index) {
-            return "DECLARE $p" + String.valueOf(index) + "AS Text";
+            return "DECLARE $p" + String.valueOf(index) + " AS Text";
         }
 
         @Override
@@ -214,7 +214,7 @@ public class YdbQueryBuilder {
 
         @Override
         public String getParametersPart(int index) {
-            return "DECLARE $p" + String.valueOf(index) + "AS Text";
+            return "DECLARE $p" + String.valueOf(index) + " AS Text";
         }
 
         @Override
@@ -237,7 +237,7 @@ public class YdbQueryBuilder {
 
         @Override
         public String getParametersPart(int index) {
-            return "DECLARE $p" + String.valueOf(index) + "AS Timestamp";
+            return "DECLARE $p" + String.valueOf(index) + " AS Timestamp";
         }
 
         @Override
@@ -260,7 +260,7 @@ public class YdbQueryBuilder {
 
         @Override
         public String getParametersPart(int index) {
-            return "DECLARE $p" + String.valueOf(index) + "AS Timestamp";
+            return "DECLARE $p" + String.valueOf(index) + " AS Timestamp";
         }
 
         @Override
@@ -285,7 +285,7 @@ public class YdbQueryBuilder {
 
         @Override
         public String getParametersPart(int index) {
-            return "DECLARE $p" + String.valueOf(index) + "AS Timestamp";
+            return "DECLARE $p" + String.valueOf(index) + " AS Timestamp";
         }
 
         @Override

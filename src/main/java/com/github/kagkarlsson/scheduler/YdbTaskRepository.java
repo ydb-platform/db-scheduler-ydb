@@ -167,6 +167,8 @@ public class YdbTaskRepository implements TaskRepository {
     private void queryAndConsume(YdbQueryBuilder qb, Consumer<Execution> consumer) {
         String sql = qb.getQuery();
         Params params = qb.getParams();
+        LOG.debug("SQL query: {}", sql);
+        System.out.println("*** " + sql);
         ResultSetReader result = retryCtx.supplyResult(qs -> QueryReader.readFrom(
                 qs.createQuery(sql, TxMode.SNAPSHOT_RO, params)))
                 .join().getValue().getResultSet(0);
